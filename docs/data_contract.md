@@ -1,0 +1,22 @@
+Official Dataset Columns
+date
+AQI
+PM2.5 
+PM10 
+NO2 
+SO2 
+CO 
+O3 
+temperature 
+humidity 
+wind_speed 
+rainfall 
+aqi_lag1 
+aqi_lag3 
+aqi_lag7 
+aqi_mean7 
+aqi_std7 
+month
+weekday 
+day
+target
