@@ -30,7 +30,7 @@ st.caption("CSE276 Course Project | 24–72h Multi-Horizon Forecasting with Quan
 DATA_PATH = os.path.join(os.path.dirname(__file__), "..", "data", "raw", "cpcb_openaq_hourly_2024_2025.csv")
 
 
-@st.cache_data
+@st.cache_resource(show_spinner="Loading AQI forecasting models...")
 def run_pipeline(city: str, horizon: int):
     clean_df = load_and_clean_data(DATA_PATH, city=city)
     feat_df = engineer_features(clean_df)
