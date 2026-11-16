@@ -3,7 +3,8 @@ Interactive Streamlit Dashboard for Project 44:
 Air Quality Forecasting & Personalised Health Advisory System
 Run with: streamlit run app/streamlit_app.py
 """
-
+import json
+import joblib
 import os
 import sys
 import numpy as np
@@ -31,13 +32,12 @@ DATA_PATH = os.path.join(os.path.dirname(__file__), "..", "data", "raw", "cpcb_o
 
 
 @st.cache_resource(show_spinner="Loading AQI forecasting models...")
-def run_pipeline(city: str, horizon: int):
-    clean_df = load_and_clean_data(DATA_PATH, city=city)
-    feat_df = engineer_features(clean_df)
-    model_df = create_multi_horizon_targets(feat_df, horizons=(24, 48, 72))
-    metrics_df, preds_df, unc_stats, artifacts = train_and_evaluate_horizon(model_df, horizon=horizon, test_days=60)
-    imp_df = compute_feature_importance(artifacts["rf_model"], artifacts["X_test"], artifacts["feature_cols"])
-    return clean_df, model_df, metrics_df, preds_df, unc_stats, artifacts, imp_df
+def load_artifacts():
+    with open("models/feature_cols.json", "r") as f:
+        feature_cols = json.load(f)
+    # Replace filenames below with the exact files inside your models/ folder
+    model_24h = joblib.load("models/model_24h.joblib")
+    return feature_cols, model_24h
 
 
 # Sidebar Controls
