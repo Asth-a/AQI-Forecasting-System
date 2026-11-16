@@ -1,0 +1,6 @@
+,MAE,RMSE,MAPE (%),R2,Skill vs Persistence (%)
+Persistence Baseline,36.06,56.13,8.18,-0.524,0.0
+Ridge Regression,33.65,44.33,7.29,0.049,21.02
+Random Forest,30.33,42.45,6.76,0.128,24.37
+Gradient Boosting (XGB/HGB),29.51,40.49,6.57,0.207,27.86
+Holt-Winters Time-Series,35.87,56.16,8.09,-0.526,-0.05

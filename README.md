@@ -1,36 +1,71 @@
-# AQI Forecasting & Personalised Health Advisory System
+# Air Quality Forecasting & Personalised Health Advisory System (Project 44)
 
-Forecasts the Air Quality Index (CPCB scale) **24, 48 and 72 hours ahead** for an Indian city and turns the
-forecast into **rule-based, group-specific health advice** (general public, asthma patients, children, elderly,
-outdoor workers) with **honest uncertainty ranges**.
+**Course:** CSE276 — Artificial Intelligence Foundations (Session 2026–27)  
+**Deliverable:** End-to-end 24–72 hour Air Quality Index (AQI) forecasting system with quantile uncertainty estimation, SHAP feature explainability, an auditable rule-based health advisory engine, a complete Jupyter Notebook, and an interactive Streamlit web dashboard.
 
-## Pipeline
-| Notebook | What it does |
-|---|---|
-| `01c_OpenAQ_Data_Collection` | Reads your OpenAQ station export, builds daily CPCB AQI, downloads matching weather from Open-Meteo (older alternatives: `01` Kaggle file, `01b` Open-Meteo modelled data) |
-| `02_Data_Cleaning` | Gap handling, outlier capping, exploratory analysis |
-| `03_Feature_Engineering` | AQI lags, pollutants, traffic proxies, weather, seasonality, pollution-event history |
-| `04_Model_Training` | Persistence baseline vs Ridge / Random Forest / XGBoost, 80% prediction intervals |
-| `05_Prophet` | Prophet & ARIMA (rolling-origin), final comparison table |
-| `06_SHAP` | Feature importance and explanations |
-| `app.py` | Streamlit dashboard + advisory rule engine (`utils.py`) |
+---
 
-## How to run
+## 📁 Repository Structure
+
+```text
+air-quality-forecasting-health-advisory/
+├── app/
+│   └── streamlit_app.py                         # Interactive Streamlit deployment dashboard
+├── data/
+│   ├── raw/
+│   │   └── cpcb_openaq_hourly_2024_2025.csv     # 2-year hourly CPCB/OpenAQ dataset (Delhi & Chandigarh)
+│   └── processed/
+│       └── delhi_features_targets.csv           # Cleaned, gap-imputed & feature-engineered dataset
+├── models/
+│   ├── benchmark_metrics_24h.csv                # +24h model comparison vs Persistence Baseline
+│   ├── benchmark_metrics_48h.csv                # +48h model comparison vs Persistence Baseline
+│   ├── benchmark_metrics_72h.csv                # +72h model comparison vs Persistence Baseline
+│   └── feature_importance_summary.csv           # Global feature importance rankings
+├── notebooks/
+│   └── 01_AQI_Forecasting_and_Health_Advisory.ipynb  # Complete end-to-end Jupyter Notebook
+├── src/
+│   ├── __init__.py
+│   ├── data_pipeline.py                         # CPCB AQI calculation, gap handling & feature engineering
+│   ├── models.py                                # Persistence, Ridge, RF, XGBoost, Holt-Winters & Quantile PI
+│   ├── explainability.py                        # SHAP & local/global feature attribution
+│   └── health_advisory.py                       # Auditable rule-based health guidance for 5 user groups
+├── .gitignore
+├── requirements.txt
+└── README.md
+```
+
+---
+
+## 🚀 Quickstart Guide
+
+### 1. Install Dependencies
 ```bash
 pip install -r requirements.txt
-# 1. put your OpenAQ export (openaq_*.csv) in data/raw/
-# 2. run notebooks 01c, 02, 03, 04, 05, 06 in order (jupyter notebook)
-python -m streamlit run app.py
 ```
-Set the city name in `utils.py` (`CITY`). Train/validation/test dates are chosen automatically from the data.
 
-## Method notes
-* Chronological split: train <= 2018, validation H1 2019, test after 2019-06-30 (never shuffled).
-* Features at day *t* only use data available at the end of day *t* (no leakage).
-* Uncertainty: empirical 10th/90th percentile of validation error ratios -> 80% interval; coverage is checked on the test set.
-* Advisory uses the *upper* bound of the interval for planning.
+### 2. Run the Jupyter Notebook
+```bash
+jupyter notebook notebooks/01_AQI_Forecasting_and_Health_Advisory.ipynb
+```
 
-## Limitations
-* Data covers one monitoring station, not the whole city; the dashboard's latest forecast starts from the last day in the data file.
-* Weather inputs are observed values at forecast time, not weather forecasts.
-* Not medical advice.
+### 3. Launch the Interactive Streamlit Dashboard
+```bash
+streamlit run app/streamlit_app.py
+```
+
+---
+
+## 🧠 System Architecture & Core Modules
+
+1. **Data Acquisition & Gap Handling (`src/data_pipeline.py`)**:
+   - Supports OpenAQ v3 live API queries alongside the bundled 35,088-row hourly dataset (`2024–2025`) covering **Delhi** and **Chandigarh**.
+   - Performs physical sensor bound clipping, continuous hourly re-indexing, short-gap linear interpolation ($\le 6	ext{h}$), and exact Indian **CPCB National AQI (NAQI)** sub-index computation.
+2. **Domain Feature Engineering (`src/data_pipeline.py`)**:
+   - **Temporal/Seasonal:** Cyclical encodings (`hour_sin/cos`, `doy_sin/cos`), weekend flags, and winter inversion/stubble-burning season flags.
+   - **Meteorological Dispersion:** Ventilation coefficient ($	ext{Wind Speed} 	imes 	ext{Boundary Layer Height}$), stagnation index, and dew-point proxy.
+   - **Traffic & Event History:** Rush-hour traffic proxy interactions and leakage-free autoregressive lags (`1h` to `72h`) and rolling maxima/volatility.
+3. **Multi-Horizon Forecasting & Uncertainty (`src/models.py`)**:
+   - Compares **Persistence Baseline**, **Ridge Regression**, **Random Forest**, **Gradient Boosting (XGBoost / HistGBM)**, and **Holt-Winters Time-Series** across **+24h, +48h, and +72h** horizons using a strict chronological split.
+   - Outputs calibrated **80% Prediction Intervals (10th–90th percentile)** via Quantile Gradient Boosting rather than single overconfident point values.
+4. **Explainability & Rule-Based Health Engine (`src/explainability.py`, `src/health_advisory.py`)**:
+   - Generates tailored, auditable medical/activity advisories for **Asthmatics**, **Children**, **Elderly (65+)**, **Outdoor Workers**, and the **General Public**, automatically escalating precautions when the upper uncertainty bound crosses into a worse AQI category.
