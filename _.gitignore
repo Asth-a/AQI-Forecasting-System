@@ -1,0 +1,9 @@
+.ipynb_checkpoints/
+__pycache__/
+*.pyc
+.venv/
+venv/
+.DS_Store
+# big raw download - keep data/raw/ small in git
+data/raw/city_day.csv
+# NOTE: do NOT ignore data/processed/ or models/ - the deployed dashboard needs them
