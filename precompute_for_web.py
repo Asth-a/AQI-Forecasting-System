@@ -1,6 +1,5 @@
 import os
 import pickle
-import pandas as pd
 from src.data_pipeline import load_and_clean_data, engineer_features, create_multi_horizon_targets
 from src.models import train_and_evaluate_horizon
 from src.explainability import compute_feature_importance
@@ -10,17 +9,15 @@ OUT_DIR = os.path.join("models", "web_cache")
 os.makedirs(OUT_DIR, exist_ok=True)
 
 for city in ["Delhi", "Chandigarh"]:
-    print(f"Processing {city}...")
+    print(f"Processing {city}...", flush=True)
     clean_df = load_and_clean_data(DATA_PATH, city=city)
     feat_df = engineer_features(clean_df)
     model_df = create_multi_horizon_targets(feat_df)
 
-    # Keep only the tail rows needed by the dashboard to keep files tiny & fast
-    model_df_tail = model_df.tail(700).copy()
-    model_df_tail.to_parquet(os.path.join(OUT_DIR, f"{city}_model_df.parquet"))
+    model_df.tail(700).to_parquet(os.path.join(OUT_DIR, f"{city}_model_df.parquet"))
 
     for horizon in [24, 48, 72]:
-        print(f"  Training {city} +{horizon}h...")
+        print(f"  Training {city} +{horizon}h...", flush=True)
         metrics_df, preds_df, unc_stats, artifacts = train_and_evaluate_horizon(
             model_df, horizon=horizon, test_days=60
         )
@@ -30,10 +27,14 @@ for city in ["Delhi", "Chandigarh"]:
             artifacts["feature_cols"],
         )
 
-        # Save only the Random Forest model needed for local SHAP/feature explanation
+        # Save all trained predictors needed for real-time live inference + SHAP
         light_artifacts = {
-            "rf_model": artifacts["rf_model"],
             "feature_cols": artifacts["feature_cols"],
+            "rf_model": artifacts["rf_model"],
+            "gb_model": artifacts["gb_model"],
+            "q10_model": artifacts["q10_model"],
+            "q50_model": artifacts["q50_model"],
+            "q90_model": artifacts["q90_model"],
         }
 
         bundle = {
@@ -46,4 +47,4 @@ for city in ["Delhi", "Chandigarh"]:
         with open(os.path.join(OUT_DIR, f"{city}_{horizon}h.pkl"), "wb") as f:
             pickle.dump(bundle, f, protocol=pickle.HIGHEST_PROTOCOL)
 
-print("Done! All web cache files saved in models/web_cache/")
+print("Done! Updated web cache files with live inference models.")
