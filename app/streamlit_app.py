@@ -4,17 +4,15 @@ Air Quality Forecasting & Personalised Health Advisory System
 Run with: streamlit run app/streamlit_app.py
 """
 import os
+import pickle
 import sys
-import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from src.data_pipeline import load_and_clean_data, engineer_features, create_multi_horizon_targets
-from src.models import train_and_evaluate_horizon
-from src.explainability import compute_feature_importance, explain_single_prediction
+from src.explainability import explain_single_prediction
 from src.health_advisory import generate_health_advisory, classify_aqi_band
 
 st.set_page_config(
@@ -26,29 +24,22 @@ st.set_page_config(
 st.title("🌬️ Air Quality Forecasting & Personalised Health Advisory System")
 st.caption("CSE276 Course Project | 24–72h Multi-Horizon Forecasting with Quantile Uncertainty & Rule-Based Health Guidance")
 
-DATA_PATH = os.path.join(os.path.dirname(__file__), "..", "data", "raw", "cpcb_openaq_hourly_2024_2025.csv")
+CACHE_DIR = os.path.join(os.path.dirname(__file__), "..", "models", "web_cache")
 
 
-@st.cache_data(show_spinner="Loading and engineering AQI dataset...")
-def load_city_data(city: str):
-    clean_df = load_and_clean_data(DATA_PATH, city=city)
-    feat_df = engineer_features(clean_df)
-    model_df = create_multi_horizon_targets(feat_df)
-    return clean_df, model_df
-
-
-@st.cache_resource(show_spinner="Training & caching AQI forecasting models (runs once per horizon)...")
-def run_pipeline(city: str, horizon: int):
-    clean_df, model_df = load_city_data(city)
-    metrics_df, preds_df, unc_stats, artifacts = train_and_evaluate_horizon(
-        model_df, horizon=horizon, test_days=60
+@st.cache_resource(show_spinner=False)
+def load_precomputed(city: str, horizon: int):
+    model_df = pd.read_parquet(os.path.join(CACHE_DIR, f"{city}_model_df.parquet"))
+    with open(os.path.join(CACHE_DIR, f"{city}_{horizon}h.pkl"), "rb") as f:
+        bundle = pickle.load(f)
+    return (
+        model_df,
+        bundle["metrics_df"],
+        bundle["preds_df"],
+        bundle["unc_stats"],
+        bundle["artifacts"],
+        bundle["imp_df"],
     )
-    imp_df = compute_feature_importance(
-        artifacts["rf_model"],
-        model_df[artifacts["feature_cols"]].tail(500),
-        artifacts["feature_cols"],
-    )
-    return clean_df, model_df, metrics_df, preds_df, unc_stats, artifacts, imp_df
 
 
 # Sidebar Controls
@@ -66,7 +57,7 @@ selected_group = st.sidebar.selectbox(
     ],
 )
 
-clean_df, model_df, metrics_df, preds_df, unc_stats, artifacts, imp_df = run_pipeline(selected_city, selected_horizon)
+model_df, metrics_df, preds_df, unc_stats, artifacts, imp_df = load_precomputed(selected_city, selected_horizon)
 
 # Select forecast timestamp index from test window
 max_idx = len(preds_df) - 1
