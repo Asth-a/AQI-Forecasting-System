@@ -18,11 +18,11 @@ from src.live_inference import predict_live_horizons
 
 st.set_page_config(
     page_title="Air Quality Forecast & Health Guide",
-    page_icon="🌬️",
+    page_icon="🍃",
     layout="wide",
 )
 
-st.title("🌬️ Air Quality Forecast & Daily Health Guide")
+st.title("🍃 Air Quality Forecast & Daily Health Guide")
 st.caption("Check today's air, see what's coming next, and get simple steps to stay safe.")
 
 CACHE_DIR = os.path.join(os.path.dirname(__file__), "..", "models", "web_cache")
@@ -157,15 +157,15 @@ with tab1:
 
     col_a, col_b = st.columns(2)
     with col_a:
-        st.markdown("### ✅ Recommended Protective Actions")
+        st.markdown("###  Recommended Protective Actions")
         for act in advisory.recommended_actions:
             st.markdown(f"- {act}")
-        st.markdown(f"**😷 Recommended Gear:** {advisory.protective_gear}")
-        st.markdown(f"**⏱️ Outdoor Activity Limit:** {advisory.outdoor_activity_limit}")
+        st.markdown(f"** Recommended Gear:** {advisory.protective_gear}")
+        st.markdown(f"** Outdoor Activity Limit:** {advisory.outdoor_activity_limit}")
 
     with col_b:
         trace_heading = "Auditable Rule Engine Trace" if show_technical else "Why This Advice?"
-        st.markdown(f"### 🔍 {trace_heading}")
+        st.markdown(f"###  {trace_heading}")
         for r in advisory.triggered_rules:
             st.code(r, language="text")
 
@@ -264,7 +264,7 @@ with tab3:
             fig_imp.update_layout(height=360, margin=dict(l=10, r=10, t=10, b=10), xaxis_title=val_col)
             st.plotly_chart(fig_imp, use_container_width=True)
 
-        st.markdown("### 🔎 Local Explanation for Current / Selected Forecast Timestamp")
+        st.markdown("###  Local Explanation for Current / Selected Forecast Timestamp")
         local_drivers = explain_single_prediction(artifacts["rf_model"], row_feat, artifacts["feature_cols"], top_k=5)
         st.table(pd.DataFrame(local_drivers))
     else:
